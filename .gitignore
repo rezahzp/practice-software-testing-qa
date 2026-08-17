@@ -22,6 +22,7 @@ playwright-traces/
 # Environment configurations (Never commit secrets!)
 .env
 .env.local
+.env.example
 
 # IDEs
 .vscode/
