@@ -1,0 +1,28 @@
+# .gitignore
+
+# Python environments and cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Test artifacts and reports
+test-results/
+reports/
+*.html
+*.xml
+*.png
+*.webm
+*.zip
+playwright-traces/
+
+# Environment configurations (Never commit secrets!)
+.env
+.env.local
+
+# IDEs
+.vscode/
+.idea/

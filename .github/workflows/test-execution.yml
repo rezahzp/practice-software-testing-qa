@@ -1,0 +1,71 @@
+name: Automated QA Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Allows you to trigger it manually from the GitHub UI
+
+jobs:
+  e2e-testing:
+    name: Full Stack Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout QA Framework
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Checkout Application Under Test (AUT)
+        uses: actions/checkout@v4
+        with:
+          repository: testsmith-io/practice-software-testing
+          path: aut-source
+
+      - name: 🐳 Start Application Containers
+        working-directory: ./aut-source
+        run: |
+          # Boot the bare minimum containers for testing
+          docker compose -f docker-compose.yml up -d
+          
+          # Wait for the database and API to become healthy
+          sleep 30
+          
+          # Seed the database and fix permissions just like we did locally
+          docker exec -u root pst-laravel-api-1 chmod -R 777 storage bootstrap/cache
+          docker exec pst-laravel-api-1 php artisan migrate:fresh --seed
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🎭 Install Playwright Chromium
+        run: playwright install chromium --with-deps
+
+      - name: 🧪 Execute Test Suite
+        env:
+          # We inject the environment variables dynamically for the pipeline
+          BASE_UI_URL: http://localhost:4200
+          BASE_API_URL: http://localhost:8091
+          ADMIN_EMAIL: admin@practicesoftwaretesting.com
+          ADMIN_PASSWORD: welcome01
+          CUSTOMER_EMAIL: customer@practicesoftwaretesting.com
+          CUSTOMER_PASSWORD: welcome01
+          DB_CONNECTION_STRING: mysql+pymysql://root:root@127.0.0.1:3306/toolshop
+        run: |
+          pytest -v --html=reports/ci-report.html
+
+      - name: 📊 Upload Test Report
+        if: always() # Upload the report even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-html-report
+          path: reports/ci-report.html
+          retention-days: 7
