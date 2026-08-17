@@ -33,6 +33,7 @@ jobs:
           
           # Seed the database and fix permissions just like we did locally
           docker exec -u root pst-laravel-api-1 chmod -R 777 storage bootstrap/cache
+          docker exec pst-laravel-api-1 composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-ffi
           docker exec pst-laravel-api-1 php artisan migrate:fresh --seed
 
       - name: 🐍 Set up Python
