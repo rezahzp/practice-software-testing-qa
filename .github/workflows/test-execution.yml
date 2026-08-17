@@ -28,10 +28,15 @@ jobs:
           # Boot the bare minimum containers for testing
           docker compose -f docker-compose.yml up -d
           
-          # Wait for the database and API to become healthy
-          sleep 30
+          # 1. SMART WAIT: Block the pipeline until the composer container finishes downloading packages and exits securely
+          echo "Waiting for PHP dependencies to install..."
+          docker wait pst-composer-1
           
-          # Seed the database and fix permissions just like we did locally
+          # 2. Give MariaDB a few extra seconds to ensure it is ready to accept connections
+          echo "Waiting for MariaDB to initialize..."
+          sleep 20
+          
+          # 3. Fix permissions and Seed the database
           docker exec -u root pst-laravel-api-1 chmod -R 777 storage bootstrap/cache
           docker exec pst-laravel-api-1 php artisan migrate:fresh --seed
 
